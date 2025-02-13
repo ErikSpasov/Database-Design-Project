@@ -1,0 +1,193 @@
+		QUERY 1:
+
+SELECT 
+    DAYNAME(Booking_Date) AS Day_Of_Week,
+    COUNT(*) AS Total_Attendance
+FROM 
+    booking
+GROUP BY 
+    DAYNAME(Booking_Date)
+ORDER BY 
+    Total_Attendance DESC;
+
+		QUERY 2:
+
+SELECT
+    CASE 
+        WHEN DAYOFWEEK(Booking_Date) IN (1, 7) THEN 'Weekend'
+        ELSE 'Weekday'
+    END AS Day_Type,
+    COUNT(*) AS Total_Bookings
+FROM 
+    booking
+GROUP BY 
+    Day_Type
+ORDER BY 
+    Total_Bookings DESC;
+
+		QUERY 3:
+
+SELECT 
+    e.Event_Type,
+    COUNT(b.Booking_ID) AS Number_Of_Bookings
+FROM 
+    booking b
+JOIN 
+    event e ON b.Event_ID = e.Event_ID
+GROUP BY 
+    e.Event_Type
+ORDER BY 
+    Number_Of_Bookings DESC
+LIMIT 5;
+
+		QUERY 4:
+
+SELECT 
+    u.User_ID,
+    u.First_Name,
+    u.Last_Name,
+    COUNT(b.Booking_ID) AS Number_Of_Events_Attended
+FROM 
+    user u
+JOIN 
+    booking b ON u.User_ID = b.User_ID
+WHERE 
+    b.Booking_Date BETWEEN '2024-01-01' AND '2024-12-31'
+    AND b.Booking_Status = 'Confirmed'
+GROUP BY 
+    u.User_ID, u.First_Name, u.Last_Name
+ORDER BY 
+    Number_Of_Events_Attended DESC;
+
+		QUERY 5:
+
+SELECT 
+    s.Space_ID,
+    s.Name AS Space_Name,
+    s.Capacity,
+    ROUND((AVG(CASE 
+                WHEN b.Booking_Status = 'Confirmed' THEN 1 
+                ELSE 0 
+            END) * 100) / s.Capacity, 2) AS Average_Utilisation_Percentage
+FROM 
+    space s
+JOIN 
+    booking b ON s.Space_ID = b.Space_ID
+JOIN 
+    event e ON b.Event_ID = e.Event_ID
+WHERE 
+    b.Booking_Date BETWEEN '2024-01-01' AND '2024-12-31'
+GROUP BY 
+    s.Space_ID, s.Name, s.Capacity
+ORDER BY 
+    Average_Utilisation_Percentage DESC;
+
+		QUERY 6:
+
+SELECT 
+    s.Space_ID,
+    s.Name AS Space_Name,
+    s.Capacity,
+    COUNT(b.Booking_ID) AS Total_Bookings,
+    ROUND((COUNT(b.Booking_ID) * 100.0) / s.Capacity, 2) AS Utilisation_Percentage
+FROM 
+    space s
+LEFT JOIN 
+    booking b ON s.Space_ID = b.Space_ID
+WHERE 
+    b.Booking_Status = 'Confirmed'
+GROUP BY 
+    s.Space_ID, s.Name, s.Capacity
+HAVING 
+    Utilisation_Percentage < 50underutilised
+ORDER BY 
+    Utilisation_Percentage ASC;
+
+		QUERY 7:
+
+SELECT 
+    ut.Type_Name AS Member_Type,
+    COUNT(DISTINCT b.Event_ID) AS Total_Events_Attended,
+    COUNT(b.Booking_ID) AS Total_Bookings
+FROM 
+    user u
+JOIN 
+    user_type ut ON u.User_Type_ID = ut.User_Type_ID
+LEFT JOIN 
+    booking b ON u.User_ID = b.User_ID
+GROUP BY 
+    ut.Type_Name
+ORDER BY 
+    Total_Events_Attended DESC;
+
+		QUERY 8:
+
+SELECT
+    CASE 
+        WHEN MONTH(b.Booking_Date) IN (11, 12, 1, 2) THEN 'Winter'
+        WHEN MONTH(b.Booking_Date) IN (3, 4, 5) THEN 'Spring'
+        WHEN MONTH(b.Booking_Date) IN (6, 7, 8) THEN 'Summer'
+        WHEN MONTH(b.Booking_Date) IN (9, 10) THEN 'Autumn'
+    END AS Season,
+    COUNT(b.Booking_ID) AS Total_Bookings
+FROM 
+    booking b
+JOIN 
+    space s ON b.Space_ID = s.Space_ID
+GROUP BY 
+    Season
+ORDER BY 
+    Total_Bookings DESC;
+
+		QUERY 9:
+
+SELECT 
+    e.Event_Name,
+    COUNT(b.Booking_ID) AS Total_Attendees,
+    s.Capacity AS Space_Capacity,
+    ROUND((COUNT(b.Booking_ID) / s.Capacity) * 100, 2) AS Attendance_Rate_Percentage
+FROM 
+    event e
+JOIN 
+    booking b ON e.Event_ID = b.Event_ID
+JOIN 
+    space s ON e.Location = s.Location
+GROUP BY 
+    e.Event_ID, e.Event_Name, s.Capacity
+ORDER BY 
+    Attendance_Rate_Percentage DESC;
+
+		PERSONAL QUERY 10:
+
+SELECT
+  e.Location,
+  COUNT(b.Booking_ID) AS Total_Attendance
+FROM
+  event e
+JOIN
+  booking b ON e.Event_ID = b.Event_ID
+GROUP BY
+  e.Location;
+		PERSONAL QUERY 11:
+
+WITH PopularTickets AS (
+  SELECT
+    e.Ticket_Type,
+    e.Ticket_Price,
+    COUNT(b.Booking_ID) AS Total_Bookings
+  FROM
+    event e
+  JOIN
+    booking b ON e.Event_ID = b.Event_ID
+  GROUP BY
+    e.Ticket_Type, e.Ticket_Price
+)
+
+SELECT
+  Ticket_Type,
+  Ticket_Price,
+  Total_Bookings
+FROM
+  PopularTickets
+ORDER BY
+  Total_Bookings DESC
